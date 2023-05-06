@@ -1,3 +1,9 @@
+```shell
+repo init --repo-url ssh://git@www.rockchip.com.cn/repo/rk/tools/repo -u ssh://git@www.rockchip.com.cn/linux/rockchip/platform/manifests -b linux -m rk3588_linux_release.xml
+```
+
+[Repo工作原理和使用介绍_Android_脚本之家 (jb51.net)](https://www.jb51.net/article/232003.htm#:~:text=Repo工作原理和使用介绍 1 1. 概要 repo是Android为了方便管理多个git库而开发的Python脚本。 repo的出现，并非为了取代git，而是为了让Android开发者更为有效的利用git。 Android源码包含数百个git库，仅仅是下载这么多git库就是一项繁重的任务，所以在下载源码时，Android就引入了repo。 Android官方推荐下载repo的方法是通过Linux,通过集中维护所有git库的清单，repo可以方便的从清单中获取git库的信息。 ... 3 3. 使用介绍 repo命令的使用格式如下所示： 1 )
+
 ###### 创建目录和修改环境变量
 
 ```shell

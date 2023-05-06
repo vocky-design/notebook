@@ -1,0 +1,1 @@
+[(21条消息) 制作 ramdisk.img，使用cpio 和 gzip_ramdisk cpio_kunkliu的博客-CSDN博客](https://blog.csdn.net/kunkliu/article/details/104838764)

@@ -1,8 +1,13 @@
 exit是一个**库函数**，在进程正常结束时调用。
 
-#include <stdlib.h>
+功能：关闭所有文件，终止正在执行的进程。
 
+```c
+#include <stdlib.h>
+#define EXIT_FAILURE 1
+#define EXIT_SUCCESS 0
 void exit(int status);
+```
 
 _exit是一个**系统调用**，用来终止一个进程。
 
