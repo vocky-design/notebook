@@ -189,3 +189,5 @@ alias功能
 if 条件判断
 
 [Shell if 条件判断 - 小白一生 - 博客园 (cnblogs.com)](https://www.cnblogs.com/liudianer/p/12071476.html)
+
+`-L FILE` 如果FILE存在且是一个符号链接则为真
