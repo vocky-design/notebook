@@ -41,3 +41,21 @@ static void v4l2_subdev_collect_streams(struct v4l2_subdev *sd,
 如果记录的信息中表明已经enabled，enable_streams置位。
 ```
 
+
+
+````
+flowchart TD
+    Start --> Stop
+````
+
+```c
+struct v4l2_subdev {
+#if defined(CONFIG_MEDIA_CONTROLLER)
+	struct media_entity entity;
+#endif
+  struct list_head async_list;
+};
+```
+
+
+
