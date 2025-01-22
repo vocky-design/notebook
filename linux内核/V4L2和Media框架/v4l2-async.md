@@ -38,9 +38,15 @@ struct v4l2_async_match_desc {
   };
 };
 
+/* Find the sub-device notifier registered by a sub-device driver. */
 static struct v4l2_async_notifier *
 v4l2_async_find_subdev_notifier(struct v4l2_subdev *sd);
-1. 遍历notifier_list，寻找属于sd的notifier。
+1. 遍历notifier_list，寻找对应sd的notifier。
+
+/* Get v4l2_device related to the notifier if one can be found. */
+static struct v4l2_device *
+v4l2_async_nf_find_v4l2_dev(struct v4l2_async_notifier *notifier);
+1. 根据notifier->parent机制找到最上层，返回top_notifier->v4l2_dev;
 
 /*Return true if all child sub-device notifiers are complete, false otherwise*/
 static bool
@@ -48,25 +54,51 @@ v4l2_async_nf_can_complete(struct v4l2_async_notifier *notifier);
 1. 如果notifier->waiting_list不为空，返回false；
 2. 遍历notifier->done_list:找到相关子设备的notifier，递归调用v4l2_async_nf_can_complete。
 
+/*
+ * Complete the master notifier if possible. This is done when all async
+ * sub-devices have been bound; v4l2_device is also available then.
+ */
+static int
+v4l2_async_nf_try_complete(struct v4l2_async_notifier *notifier);
+1. 如果notifier->waiting_list不为空，返回0；
+2. 找到top_notifier;
+3. 如果top_notifier->v4l2_dev为空，返回0；
+4. 如果v4l2_async_nf_can_complete(top_notifier)返回false，返回0；
+5. v4l2_async_nf_call_complete(top_notifier);
+
+void 
+v4l2_async_nf_init(struct v4l2_async_notifier *notifier,
+			             struct v4l2_device *v4l2_dev);
+1. 初始化notifier->waiting_list、notifier->done_list、notifier->notifier_entry.
+2. notifier->v4l2_dev = v4l2_dev.
+
+void 
+v4l2_async_subdev_nf_init(struct v4l2_async_notifier *notifier,
+			                    struct v4l2_subdev *sd)
+1. 初始化notifier->waiting_list、notifier->done_list、notifier->notifier_entry.
+2. notifier->sd = sd.
+
+/*
+ * Find out whether an async sub-device was set up already or whether it exists
+ * in a given notifier.
+ */
 static bool
 v4l2_async_nf_has_async_match(struct v4l2_async_notifier *notifier,
 			                        struct v4l2_async_match_desc *match);
 1. 遍历notifer->waiting_list和notifier->done_list，如果match被添加两次，返回true。
-2. 检查notifier_list上挂载的notifier的waiting_list和done_list，如果存在相同match，返回true。
+2. 遍历notifier_list，检查traveral_notifer>waiting_list和traveral_notifer->done_list
+是否有匹配match的asc.
 
 static int 
 v4l2_async_nf_match_valid(struct v4l2_async_notifier *notifier,
 				                  struct v4l2_async_match_desc *match);
 1. v4l2_async_nf_has_async_match(notifier, match);
 
-static int
-v4l2_async_nf_try_complete(struct v4l2_async_notifier *notifier);
-1. 如果notifier->waiting_list不为空，返回0；
-2. 
-
 static int 
 __v4l2_async_nf_register(struct v4l2_async_notifier *notifier);
-1. 遍历notifier->waiting_list:
+1. 遍历notifier->waiting_list，如果v4l2_async_nf_match_valid(notifier, &asc->match)为真，
+退出返回错误值。
+2. 
 
 /*找到notifier->waiting_list挂载的属于subdev的connection*/
 static struct v4l2_async_connection *
