@@ -4,8 +4,10 @@ static LIST_HEAD(notifier_list); //挂载struct v4l2_async_notifier
 static DEFINE_MUTEX(list_lock);
 
 struct v4l2_subdev {
+  ......
   struct list_head asc_list; //挂载struct v4l2_async_connection
   struct list_head async_list; //挂载到subdev_list
+  ......
 };
 
 struct v4l2_async_notifier {
@@ -43,6 +45,17 @@ static struct v4l2_async_notifier *
 v4l2_async_find_subdev_notifier(struct v4l2_subdev *sd);
 1. 遍历notifier_list，寻找对应sd的notifier。
 
+static struct v4l2_async_connection *
+v4l2_async_find_match(struct v4l2_async_notifier *notifier,
+		                  struct v4l2_subdev *sd);
+1. 遍历notifier->waiting_list, 
+
+void 
+v4l2_async_nf_init(struct v4l2_async_notifier *notifier,
+			             struct v4l2_device *v4l2_dev);
+1. 初始化notifier->waiting_list、notifier->done_list、notifier->notifier_entry.
+2. notifier->v4l2_dev = v4l2_dev.
+
 /* Get v4l2_device related to the notifier if one can be found. */
 static struct v4l2_device *
 v4l2_async_nf_find_v4l2_dev(struct v4l2_async_notifier *notifier);
@@ -67,12 +80,6 @@ v4l2_async_nf_try_complete(struct v4l2_async_notifier *notifier);
 5. v4l2_async_nf_call_complete(top_notifier);
 
 void 
-v4l2_async_nf_init(struct v4l2_async_notifier *notifier,
-			             struct v4l2_device *v4l2_dev);
-1. 初始化notifier->waiting_list、notifier->done_list、notifier->notifier_entry.
-2. notifier->v4l2_dev = v4l2_dev.
-
-void 
 v4l2_async_subdev_nf_init(struct v4l2_async_notifier *notifier,
 			                    struct v4l2_subdev *sd)
 1. 初始化notifier->waiting_list、notifier->done_list、notifier->notifier_entry.
@@ -87,7 +94,7 @@ v4l2_async_nf_has_async_match(struct v4l2_async_notifier *notifier,
 			                        struct v4l2_async_match_desc *match);
 1. 遍历notifer->waiting_list和notifier->done_list，如果match被添加两次，返回true。
 2. 遍历notifier_list，检查traveral_notifer>waiting_list和traveral_notifer->done_list
-是否有匹配match的asc.
+是否有匹配match的asc，如果有返回true。
 
 static int 
 v4l2_async_nf_match_valid(struct v4l2_async_notifier *notifier,
@@ -108,19 +115,25 @@ v4l2_async_find_match(struct v4l2_async_notifier *notifier,
 static int
 v4l2_async_nf_try_all_subdevs(struct v4l2_async_notifier *notifier);
 1. 遍历subdev_list上挂载的subdev：找到notifier->waiting_list挂载的属于subdev的connection。
-2. 
+2. v4l2_async_match_notify(notifier, v4l2_dev, sd, asc);
 
-
-static int v4l2_async_match_notify(struct v4l2_async_notifier *notifier,
-                        				   struct v4l2_device *v4l2_dev,
-                        				   struct v4l2_subdev *sd,
-                        				   struct v4l2_async_connection *asc)；
-1. v4l2_async_nf_call_bound(notifier, sd, asc);
-2. list_add(&asc->asc_subdev_entry, &sd->asc_list); asc->sd = sd;
-3. Move from the waiting list to notifier's done.
-
-4. subdev_notifier->parent = notifier;
-8. v4l2_async_nf_try_all_subdevs(subdev_notifier);
+static int 
+v4l2_async_match_notify(struct v4l2_async_notifier *notifier,
+				                struct v4l2_device *v4l2_dev,
+				                struct v4l2_subdev *sd,
+				                struct v4l2_async_connection *asc);
+1. 如果sd->asc_list为空，
+    调用__v4l2_device_register_subdev(v4l2_dev, sd, sd->owner);
+    registered = true;
+2. v4l2_async_nf_call_bound(notifier, sd, asc);
+3. if(registered)
+    v4l2_async_create_ancillary_links(notifier, sd);
+4. list_add(&asc->asc_subdev_entry, &sd->asc_list);
+5. list_move(&asc->asc_entry, &notifier->done_list);
+6. 调用v4l2_async_find_subdev_notifier(sd), 
+    See if the sub-device has a notifier. If not or subdev_notifier->parent exist, return 0.
+7. subdev_notifier->parent = notifier;
+8. return v4l2_async_nf_try_all_subdevs(subdev_notifier);
 
 static struct v4l2_async_notifier *
 v4l2_async_find_subdev_notifier(struct v4l2_subdev *sd);
